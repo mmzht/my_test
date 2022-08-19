@@ -17,7 +17,6 @@ def check_md5(file):
             checksum.update(buffer)
     return checksum.hexdigest()
 
-
 file_num = 0
 for roots, dirs, files in os.walk(root_dir):
     for name in files:
