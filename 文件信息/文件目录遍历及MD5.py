@@ -56,11 +56,10 @@ def get_file_info(file_path, save_path):
                 Get_CreatTime(file_name), Get_ModifyTime(file_name)
             # 进度条
             file_sizes += file_size
-            if len(df) % 5 == 0:
-                percent = int(file_sizes/total_size*100)
-                print('\r', end='')
-                print(percent, "%", '■'*percent, '>', len(df), end="")
-                sys.stdout.flush()
+            percent = int(file_sizes/total_size*100/2)
+            print('\r', end='')
+            print(percent*2, "%", '■'*percent, '>', len(df), end="")
+            # sys.stdout.flush()
 
     df.sort_values(by='文件名', ascending=False, inplace=True)  # 按文件名排序
     df.index = range(len(df))  # 重新编号
