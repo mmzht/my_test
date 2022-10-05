@@ -61,7 +61,7 @@ def get_file_info(file_path):
             if file_suf.lower() == '.jpg':
                 df.loc[len(df)] = file_path_name, name, file_suf, file_size
                 file_list.append(file_path_name)
-    # df['重复文件']=df.duplicated(subset='MD5', keep=False)
+    # df['重复文件']=df.duplicated(subset='大小', keep=False)
     df.to_excel(os.path.join(file_path, '所有文件信息.xlsx'))
     return file_list
 
@@ -94,13 +94,13 @@ def img_similarity(file_path):  # file_list文件路径列表
     return df
 
 
-def sim_result(file_path, sim_degree=0.8):
+def sim_result(file_path, sim_degree=0.9):
     df = img_similarity(file_path)
     sim_list = []
     for i in range(len(df)):
         sim_set = set()
         for j in range(i):
-            if df.iloc[i, j] > sim_degree:
+            if df.iloc[i, j] > sim_degree:  # 默认相似度0.9
                 sim_set.update([df.index[i], df.columns[j]])
         for item in sim_list:
             if item & sim_set:  # 集合有交集
@@ -112,15 +112,26 @@ def sim_result(file_path, sim_degree=0.8):
     return sim_list
 
 
+def sim_file_rename(file_path):
+    sim_files_list = sim_result(file_path)
+    num = 1
+    rename_list = []
+    for sim_files in sim_files_list:
+        for file in sim_files:
+            file_dir = os.path.split(file)[0]  # 文件dir
+            file_name = os.path.split(file)[1]  # 文件名
+            name_left = os.path.splitext(file_name)[0]  # 不含后缀的文件名
+            name_right = os.path.splitext(file_name)[1]  # 文件后缀
+            insert_srt = 'SIM'+str(num)+'--'  # 插入的字符
+            new_file_name = insert_srt + name_left[:] + name_right  # 文件名加减字符
+            new_file_path = os.path.join(file_dir, new_file_name)
+            # os.rename(file, new_file_path)  # ⭐!!!重命名文件
+            rename_list.append((file, new_file_path))
+            print(file_name, new_file_name)
+        num += 1
+    df = pd.DataFrame(rename_list, columns=('旧文件名', '新文件名'))
+    df.to_excel(os.path.join(file_path, '图片重命名.xlsx'))
+
+
 file_path = r'C:\Users\Kevin\Pictures\Saved Pictures'  # 需要查找的根目录
-files_set = sim_result(file_path, 0.9)
-
-
-# num = 1
-# for files in files_set:
-#     for file in files:
-#         file_name = os.path.splitext(file)[0]
-#         file_suf = os.path.splitext(file)[1]
-#         new_file_name = file_name + '-SIM'+str(num) + file_suf
-#         os.rename(file, new_file_name)
-#     num += 1
+sim_file_rename(file_path)
