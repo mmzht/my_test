@@ -64,9 +64,10 @@ def get_file_info(file_path, save_path):
     df.sort_values(by='文件名', ascending=False, inplace=True)  # 按文件名排序
     df.index = range(len(df))  # 重新编号
     df['重复文件'] = df.duplicated(subset='MD5', keep=False)
+    df['文件相同'] = df.duplicated(subset='文件名', keep=False)
     df.to_excel(save_path)
 
 
-file_path = r'D:\python'  # 需要查找的根目录
+file_path = r'D:\File_Restore-20221003'  # 需要查找的根目录
 save_path = r'C:\Users\Kevin\Documents\所有文件信息.xlsx'  # 结果保存
 get_file_info(file_path, save_path)

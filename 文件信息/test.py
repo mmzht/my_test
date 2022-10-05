@@ -46,8 +46,9 @@ def get_file(file_path):
                 img = cv2.resize(img, size)
                 img_df.loc[len(img_df)] = file_path_name, img
     print('文件预处理完成，文件数：', len(df))
+    df['文件名相同'] = df.duplicated(subset='文件名', keep=False)
     df.to_excel(os.path.join(file_path, '文件信息.xlsx'))
-    with open(os.path.join(file_path, 'img_data.data'), 'wb') as f:
+    with open(os.path.join(file_path, 'Img_Data.dat'), 'wb') as f:
         pickle.dump(img_df, f)  # 预处理数据保存
     return img_df
 
@@ -70,7 +71,7 @@ def img_similarity(file_path):
             bar = int((i*(i-1)/2+j+2)/(file_num*(file_num-1)/2)*100)
             print(bar, "%", '■'*bar, end="")
     print('\n相似度计算完成')
-    df.to_excel(os.path.join(file_path, '图片相似度.xlsx'))
+    df.to_excel(os.path.join(file_path, '图片相似度数据.xlsx'))
     return df
 
 
@@ -95,7 +96,7 @@ def sim_result(file_path, sim_degree=0.9):
 def file_rename_move(file_path):
     sim_files_list = sim_result(file_path)
     num = 100
-    rename_list = []
+    group_list = []
     for sim_files in sim_files_list:
         for file in sim_files:
             file_dir = os.path.split(file)[0]  # 文件dir
@@ -103,24 +104,21 @@ def file_rename_move(file_path):
             name_left = os.path.splitext(file_name)[0]  # 不含后缀的文件名
             name_right = os.path.splitext(file_name)[1]  # 文件后缀
             # 修改文件名
-            insert_srt = 'SIM'+str(num)+'--'  # 文件名插入的字符
-            new_file_name = insert_srt + name_left[:] + name_right  # 文件名加减字符
-            new_file_path = os.path.join(file_dir, new_file_name)
+            # insert_srt = 'SIM'+str(num)+'--'  # 文件名插入的字符
+            # new_file_name = insert_srt + name_left[:] + name_right  # 文件名加减字符
+            # new_file_path = os.path.join(file_dir, new_file_name)
             # os.rename(file, new_file_path)  # ⭐!!!重命名文件
-            rename_list.append((file, new_file_path))
-            print(file_name, new_file_name)
-            # 移动重复文件
+            group_list.append((num, file))
+            # 移动同组文件
             insert_dir = 'SIM'+str(num)  # 创建子文件名
             new_path = os.path.join(file_path, insert_dir)  # 新路径
             if not os.path.exists(new_path):  # 文件夹不存在
                 os.mkdir(new_path)  # 新建文件夹
             shutil.move(file, new_path)  # ⭐!!!移动名文件
         num += 1
-    df = pd.DataFrame(rename_list, columns=('旧文件名', '新文件名'))
-    df.to_excel(os.path.join(file_path, '图片重命名.xlsx'))
+    df = pd.DataFrame(group_list, columns=('分组', '文件名'))
+    df.to_excel(os.path.join(file_path, '相似文件分组.xlsx'))
 
 
-file_path = r'D:\File_Restore-20221003-2'  # 需要查找的根目录
+file_path = r'D:\File_Restore-20221003'  # 需要查找的根目录
 file_rename_move(file_path)
-# with open(save_data, 'wb') as f:#提取压缩数据
-#     pickle.dump(img_df, f)
