@@ -1,34 +1,9 @@
 import cv2
 import os
+import shutil
 import pandas as pd
 import numpy as np
-
-# def calculate(image1, image2):  # 直方图比较图片单通道相似度
-#     # 灰度直方图算法, 计算单通道的直方图的相似值
-#     hist1 = cv2.calcHist([image1], [0], None, [256], [0.0, 255.0])
-#     hist2 = cv2.calcHist([image2], [0], None, [256], [0.0, 255.0])
-#     # 计算直方图的重合度
-#     degree = 0
-#     for i in range(len(hist1)):
-#         if hist1[i] != hist2[i]:
-#             degree += (1 - abs(hist1[i] - hist2[i]) / max(hist1[i], hist2[i]))
-#         else:
-#             degree += 1
-#     return degree / len(hist1)
-
-
-# def hist_similarity_2(image1, image2, size=(256, 256)):
-#     # RGB每个通道的直方图相似度
-#     # 将图像resize后，分离为RGB三个通道，再计算每个通道的相似值
-#     # image1 = cv2.resize(image1, size)
-#     # image2 = cv2.resize(image2, size)
-#     sub_image1 = cv2.split(image1)
-#     sub_image2 = cv2.split(image2)
-#     sub_data = 0
-#     for im1, im2 in zip(sub_image1, sub_image2):
-#         sub_data += calculate(im1, im2)
-#     sub_data = sub_data / 3
-#     return sub_data
+import pickle
 
 
 def hist_similarity(img1, img2, hist_size=256):
@@ -50,9 +25,9 @@ def hist_similarity(img1, img2, hist_size=256):
     return (distance_b + distance_g + distance_r)/3
 
 
-def get_file_info(file_path):
-    file_list = []
+def get_file(file_path):
     df = pd.DataFrame(columns=('长文件名', '文件名', '后缀', '大小'))  # 信息表头
+    img_df = pd.DataFrame(columns=('长文件名', '缩微图片数据'))  # 信息表头
     for roots, dirs, file_names in os.walk(file_path):
         for name in file_names:
             file_path_name = os.path.join(roots, name)  # 含路径的文件名
@@ -60,36 +35,41 @@ def get_file_info(file_path):
             file_size = os.path.getsize(file_path_name)
             if file_suf.lower() == '.jpg':
                 df.loc[len(df)] = file_path_name, name, file_suf, file_size
-                file_list.append(file_path_name)
-    # df['重复文件']=df.duplicated(subset='大小', keep=False)
-    df.to_excel(os.path.join(file_path, '所有文件信息.xlsx'))
-    return file_list
+                # 压缩图片到长边256
+                img = cv2.imread(file_path_name)  # 中文文件名和路径会报错
+                height = img.shape[0]
+                width = img.shape[1]
+                if height < width:
+                    size = (256, int(height/width*256))
+                else:
+                    size = (int(width/height*256), 256)
+                img = cv2.resize(img, size)
+                img_df.loc[len(img_df)] = file_path_name, img
+    print('文件预处理完成，文件数：', len(df))
+    df.to_excel(os.path.join(file_path, '文件信息.xlsx'))
+    with open(os.path.join(file_path, 'img_data.data'), 'wb') as f:
+        pickle.dump(img_df, f)  # 预处理数据保存
+    return img_df
 
 
-def img_similarity(file_path):  # file_list文件路径列表
-    file_list = get_file_info(file_path)
+def img_similarity(file_path):
+    file_data = get_file(file_path)
+    file_list = file_data['长文件名']
+    img_data = file_data['缩微图片数据']
     file_num = len(file_list)
+
     df = pd.DataFrame(index=file_list, columns=file_list)
     for i in range(file_num):
-        img_i = cv2.imread(file_list[i])  # 中文会报错
-        # 缩放到长边256
-        height = img_i.shape[0]
-        width = img_i.shape[1]
-        if height < width:
-            size = (256, int(height/width*256))
-        else:
-            size = (int(width/height*256), 256)
-
-        img_1 = cv2.resize(img_i, size)
+        img_i = img_data[i]
         for j in range(i):
-            img_j = cv2.imread(file_list[j])
+            img_j = img_data[j]
             if img_i.shape == img_j.shape:
-                img_2 = cv2.resize(img_j, size)
-                df.iloc[i, j] = hist_similarity(img_1, img_2)
+                df.iloc[i, j] = hist_similarity(img_i, img_j)
             # 进度条
             print('\r', end='')
-            bar = int((i*i/2+j+1)/(file_num*file_num/2)*100)
+            bar = int((i*(i-1)/2+j+2)/(file_num*(file_num-1)/2)*100)
             print(bar, "%", '■'*bar, end="")
+    print('\n相似度计算完成')
     df.to_excel(os.path.join(file_path, '图片相似度.xlsx'))
     return df
 
@@ -112,9 +92,9 @@ def sim_result(file_path, sim_degree=0.9):
     return sim_list
 
 
-def sim_file_rename(file_path):
+def file_rename_move(file_path):
     sim_files_list = sim_result(file_path)
-    num = 1
+    num = 100
     rename_list = []
     for sim_files in sim_files_list:
         for file in sim_files:
@@ -122,16 +102,25 @@ def sim_file_rename(file_path):
             file_name = os.path.split(file)[1]  # 文件名
             name_left = os.path.splitext(file_name)[0]  # 不含后缀的文件名
             name_right = os.path.splitext(file_name)[1]  # 文件后缀
-            insert_srt = 'SIM'+str(num)+'--'  # 插入的字符
+            # 修改文件名
+            insert_srt = 'SIM'+str(num)+'--'  # 文件名插入的字符
             new_file_name = insert_srt + name_left[:] + name_right  # 文件名加减字符
             new_file_path = os.path.join(file_dir, new_file_name)
             # os.rename(file, new_file_path)  # ⭐!!!重命名文件
             rename_list.append((file, new_file_path))
             print(file_name, new_file_name)
+            # 移动重复文件
+            insert_dir = 'SIM'+str(num)  # 创建子文件名
+            new_path = os.path.join(file_path, insert_dir)  # 新路径
+            if not os.path.exists(new_path):  # 文件夹不存在
+                os.mkdir(new_path)  # 新建文件夹
+            shutil.move(file, new_path)  # ⭐!!!移动名文件
         num += 1
     df = pd.DataFrame(rename_list, columns=('旧文件名', '新文件名'))
     df.to_excel(os.path.join(file_path, '图片重命名.xlsx'))
 
 
-file_path = r'C:\Users\Kevin\Pictures\Saved Pictures'  # 需要查找的根目录
-sim_file_rename(file_path)
+file_path = r'D:\File_Restore-20221003-2'  # 需要查找的根目录
+file_rename_move(file_path)
+# with open(save_data, 'wb') as f:#提取压缩数据
+#     pickle.dump(img_df, f)
