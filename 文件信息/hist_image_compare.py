@@ -70,7 +70,7 @@ def img_similarity(img_df):  # pd '长文件名', '缩微图片数据'
             print('\r', end='')
             bar = int((i*(i-1)/2+j+2)/(file_num*(file_num-1)/2)*100)
             print(bar, "%", '■'*bar, end="")
-    print('\n相似度计算完成')
+    print('\nHist相似度计算完成')
     return sim_df
 
 
@@ -82,13 +82,16 @@ def sim_result(sim_df, sim_degree=85):
             if sim_df.iloc[i, j] > sim_degree:
                 # 把行相似度满足要求的路径加入同行集合
                 sim_set.update([sim_df.index[i], sim_df.columns[j]])
-        if sim_list == None and sim_set != None:
-            sim_list.append(sim_set)
-        elif sim_list != None and sim_set != None:
-            for i in range(len(sim_list)):  # 取列表中的一个集合；
-                if sim_list[i] & sim_set:  # 如何两个集合有交集
-                    sim_list[i] = sim_list[i] | sim_set  # 则等于并集
-                    break
+        if sim_set:
+            if sim_list:
+                for k in range(len(sim_list)):  # 取列表中的一个集合；
+                    if sim_list[k] & sim_set:  # 如何两个集合有交集
+                        sim_list[k] = sim_list[k] | sim_set  # 则等于并集
+                        break
+                else:
+                    sim_list.append(sim_set)  # 没有找到交集的，则直接添加
+            else:
+                sim_list.append(sim_set)
     return sim_list
 
 
@@ -122,12 +125,12 @@ def file_rename_move(sim_list, file_path):
     df.to_excel(os.path.join(file_path, '相似文件分组hist.xlsx'))
 
 
-file_path = r'D:\File_Restore-20221006'  # 需要查找的根目录
-# file_path = r'C:\Users\Kevin\Pictures\Saved Pictures'  # 需要查找的根目录
+# file_path = r'D:\File_Restore-20221006'  # 需要查找的根目录
+file_path = r'C:\Users\Kevin\Pictures\Saved Pictures'  # 需要查找的根目录
 
-img_df = get_file(file_path)
-# with open(os.path.join(file_path, 'Img_hist_Data.dat'), 'wb') as f:
-#     img_df = pickle.load(f)  # 读取预处理数据
+# img_df = get_file(file_path)
+with open(os.path.join(file_path, 'Img_hist_Data.dat'), 'rb') as f:
+    img_df = pickle.load(f)  # 读取预处理数据
 
 sim_df = img_similarity(img_df)
 sim_list = sim_result(sim_df, sim_degree=85)
