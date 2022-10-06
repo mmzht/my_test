@@ -2,7 +2,6 @@ import cv2
 import os
 import shutil
 import pandas as pd
-import numpy as np
 import pickle
 # 效果Whash>Hist>pHash
 
@@ -48,8 +47,8 @@ def get_file(file_path):
     print('文件预处理完成，文件数：', len(df))
     df['文件名相同'] = df.duplicated(subset='文件名', keep=False)
     df.to_excel(os.path.join(file_path, '文件信息.xlsx'))
-    with open(os.path.join(file_path, 'Img_hist_Data.dat'), 'wb') as f:
-        pickle.dump(img_df, f)  # 预处理数据保存
+    # with open(os.path.join(file_path, 'Img_hist_Data.dat'), 'wb') as f:
+    #     pickle.dump(img_df, f)  # 预处理数据保存
     return img_df
 
 
@@ -71,6 +70,8 @@ def img_similarity(img_df):  # pd '长文件名', '缩微图片数据'
             bar = int((i*(i-1)/2+j+2)/(file_num*(file_num-1)/2)*100)
             print(bar, "%", '■'*bar, end="")
     print('\nHist相似度计算完成')
+    with open(os.path.join(file_path, 'Img_hist_sim.dat'), 'wb') as f:
+        pickle.dump(sim_df, f)  # 预处理数据保存
     return sim_df
 
 
@@ -101,15 +102,6 @@ def file_rename_move(sim_list, file_path):
     for sim_files in sim_list:
         for file in sim_files:
             file_dir = os.path.split(file)[0]  # 文件dir
-            # 修改文件名
-            # file_name = os.path.split(file)[1]  # 文件名
-            # name_left = os.path.splitext(file_name)[0]  # 不含后缀的文件名
-            # name_right = os.path.splitext(file_name)[1]  # 文件后缀
-            # insert_srt = 'SIM'+str(num)+'--'  # 文件名插入的字符
-            # new_file_name = insert_srt + name_left[:] + name_right  # 文件名加减字符
-            # new_file_path = os.path.join(file_dir, new_file_name)
-            # os.rename(file, new_file_path)  # ⭐!!!重命名文件
-            group_list.append((num, file))
             # 移动同组文件
             insert_dir = 'H'+str(num)  # 创建子文件名
             new_path = os.path.join(file_path, insert_dir)  # 新路径
@@ -117,22 +109,26 @@ def file_rename_move(sim_list, file_path):
                 os.mkdir(new_path)  # 新建文件夹
             if file_dir != new_path:
                 try:
-                    shutil.move(file, new_path)  # ⭐!!!移动名文件
+                    shutil.move(file, new_path)  # ⭐!!!移动文件
                 except Exception as e:
                     print('失败：',  new_path, type(e), e)
+            group_list.append((num, file, new_path))
         num += 1
-    df = pd.DataFrame(group_list, columns=('分组', '文件名'))
+    df = pd.DataFrame(group_list, columns=('分组', '文件名', '新位置'))
     df.to_excel(os.path.join(file_path, '相似文件分组hist.xlsx'))
 
 
-# file_path = r'D:\File_Restore-20221006'  # 需要查找的根目录
-file_path = r'C:\Users\Kevin\Pictures\Saved Pictures'  # 需要查找的根目录
+file_path = r'D:\File_Restore-20221006'  # 需要查找的根目录
+# file_path = r'C:\Users\Kevin\Pictures\Saved Pictures'  # 需要查找的根目录
 
-# img_df = get_file(file_path)
-with open(os.path.join(file_path, 'Img_hist_Data.dat'), 'rb') as f:
-    img_df = pickle.load(f)  # 读取预处理数据
+img_df = get_file(file_path)
+# with open(os.path.join(file_path, 'Img_hist_Data.dat'), 'rb') as f:
+#     img_df = pickle.load(f)  # 读取预处理数据
 
 sim_df = img_similarity(img_df)
-sim_list = sim_result(sim_df, sim_degree=85)
-file_rename_move(sim_list, file_path)
+#读取之前需要还原文件位置
+# with open(os.path.join(file_path, 'Img_hist_sim.dat'), 'rb') as f:
+#     sim_df = pickle.load(f)  # 读取预相似度数据
 sim_df.to_excel(os.path.join(file_path, '图片相似度数据hist.xlsx'))
+sim_list = sim_result(sim_df, sim_degree=80)
+file_rename_move(sim_list, file_path)
