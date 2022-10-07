@@ -49,7 +49,7 @@ def img_similarity(img_df):  # pd '长文件名', '缩微图片数据'
     return sim_df
 
 
-def sim_result(sim_df, sim_degree=75):
+def sim_result(sim_df, sim_degree=85):
     sim_list = []
     for i in range(len(sim_df)):
         sim_set = set()
@@ -58,15 +58,24 @@ def sim_result(sim_df, sim_degree=75):
                 sim_set.update([sim_df.index[i], sim_df.columns[j]])
         if sim_set:
             if sim_list:
-                for k in range(len(sim_list)):  # 取列表中的一个集合；
-                    if sim_list[k] & sim_set:  # 如何两个集合有交集
-                        sim_list[k] = sim_list[k] | sim_set  # 则等于并集
+                for item in sim_list:  # 取列表中的一个集合；
+                    if item & sim_set:  # 如何两个集合有交集
+                        item.update(sim_set)  # 则等于并集
                         break
                 else:
                     sim_list.append(sim_set)  # 没有找到交集的，则直接添加
             else:
                 sim_list.append(sim_set)
-    return sim_list
+
+    for m in range(len(sim_list)):  # 取列表中的一个集合；
+        for n in range(len(sim_list)):
+            if sim_list[m] & sim_list[n]:  # 如何两个集合有交集
+                sim_list[n] = sim_list[m] | sim_list[n]  # 则等于并集
+    sim_list_no_repeat = []
+    for item in sim_list:  # 去掉重复元素
+        if item not in sim_list_no_repeat:
+            sim_list_no_repeat.append(item)
+    return sim_list_no_repeat
 
 
 def file_rename_move(sim_list, file_path):
@@ -94,13 +103,14 @@ def file_rename_move(sim_list, file_path):
 file_path = r'D:\File_Restore-20221006'  # 需要查找的根目录
 # file_path = r'C:\Users\Kevin\Pictures\Saved Pictures'  # 需要查找的根目录
 
-img_df = get_file(file_path)
+# img_df = get_file(file_path)
 # with open(os.path.join(file_path, 'Img_whash_Data.dat'), 'rb') as f:
 #     img_df = pickle.load(f)  # 读取预处理数据
-sim_df = img_similarity(img_df)
+# sim_df = img_similarity(img_df)
+# sim_df.to_excel(os.path.join(file_path, '图片相似度数据whash.xlsx'))
 # 读取之前需要还原文件位置
-# with open(os.path.join(file_path, 'Img_whash_sim.dat'), 'rb') as f:
-#     sim_df = pickle.load(f)  # 读取预相似度数据
-sim_df.to_excel(os.path.join(file_path, '图片相似度数据whash.xlsx'))
-sim_list = sim_result(sim_df, sim_degree=80)
+with open(os.path.join(file_path, 'Img_whash_sim.dat'), 'rb') as f:
+    sim_df = pickle.load(f)  # 读取预相似度数据
+    print('Img_whash_sim.dat文件加载')
+sim_list = sim_result(sim_df, sim_degree=85)
 file_rename_move(sim_list, file_path)

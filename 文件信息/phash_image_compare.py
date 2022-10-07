@@ -56,15 +56,24 @@ def sim_result(sim_df, sim_degree=70):
                 sim_set.update([sim_df.index[i], sim_df.columns[j]])
         if sim_set:
             if sim_list:
-                for k in range(len(sim_list)):  # 取列表中的一个集合；
-                    if sim_list[k] & sim_set:  # 如何两个集合有交集
-                        sim_list[k] = sim_list[k] | sim_set  # 则等于并集
+                for item in sim_list:  # 取列表中的一个集合；
+                    if item & sim_set:  # 如何两个集合有交集
+                        item.update(sim_set)  # 则等于并集
                         break
                 else:
                     sim_list.append(sim_set)  # 没有找到交集的，则直接添加
             else:
                 sim_list.append(sim_set)
-    return sim_list
+
+    for m in range(len(sim_list)):  # 取列表中的一个集合；
+        for n in range(len(sim_list)):
+            if sim_list[m] & sim_list[n]:  # 如何两个集合有交集
+                sim_list[n] = sim_list[m] | sim_list[n]  # 则等于并集
+    sim_list_no_repeat = []
+    for item in sim_list:  # 去掉重复元素
+        if item not in sim_list_no_repeat:
+            sim_list_no_repeat.append(item)
+    return sim_list_no_repeat
 
 
 def file_rename_move(sim_list, file_path):
