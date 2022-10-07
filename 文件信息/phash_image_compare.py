@@ -42,7 +42,7 @@ def img_similarity(img_df):  # pd '长文件名', '缩微图片数据'
             # 进度条
             print('\r', end='')
             bar = int((i*(i-1)/2+j+2)/(file_num*(file_num-1)/2)*100)
-            print(bar, "%", '■'*bar, end="")
+            print(bar, "%", '='*bar, '-'*(100-bar), end="")
     print('\n相似度计算完成')
     return sim_df
 

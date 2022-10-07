@@ -42,7 +42,7 @@ def img_similarity(img_df):  # pd '长文件名', '缩微图片数据'
             # 进度条
             print('\r', end='')
             bar = int((i*(i-1)/2+j+2)/(file_num*(file_num-1)/2)*100)
-            print(bar, "%", '■'*bar, end="")
+            print(bar, "%", '='*bar, '-'*(100-bar), end="")
     print('\nwhash相似度计算完成')
     with open(os.path.join(file_path, 'Img_whash_sim.dat'), 'wb') as f:
         pickle.dump(sim_df, f)  # 预处理数据保存
@@ -100,17 +100,17 @@ def file_rename_move(sim_list, file_path):
     group_df.to_excel(os.path.join(file_path, '相似文件分组whash.xlsx'))
 
 
-file_path = r'D:\File_Restore-20221006'  # 需要查找的根目录
-# file_path = r'C:\Users\Kevin\Pictures\Saved Pictures'  # 需要查找的根目录
+# file_path = r'D:\File_Restore-20221006'  # 需要查找的根目录
+file_path = r'C:\Users\Kevin\Pictures\Saved Pictures'  # 需要查找的根目录
 
-# img_df = get_file(file_path)
+img_df = get_file(file_path)
 # with open(os.path.join(file_path, 'Img_whash_Data.dat'), 'rb') as f:
 #     img_df = pickle.load(f)  # 读取预处理数据
-# sim_df = img_similarity(img_df)
+sim_df = img_similarity(img_df)
 # sim_df.to_excel(os.path.join(file_path, '图片相似度数据whash.xlsx'))
 # 读取之前需要还原文件位置
-with open(os.path.join(file_path, 'Img_whash_sim.dat'), 'rb') as f:
-    sim_df = pickle.load(f)  # 读取预相似度数据
-    print('Img_whash_sim.dat文件加载')
+# with open(os.path.join(file_path, 'Img_whash_sim.dat'), 'rb') as f:
+#     sim_df = pickle.load(f)  # 读取预相似度数据
+#     print('Img_whash_sim.dat文件加载')
 sim_list = sim_result(sim_df, sim_degree=85)
 file_rename_move(sim_list, file_path)

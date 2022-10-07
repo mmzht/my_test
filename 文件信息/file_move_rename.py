@@ -51,8 +51,8 @@ def recvery_dir(file_path):
 # file_path = r'D:\File_Restore-20221006'
 # file_path = r'C:\Users\Kevin\Pictures\Saved Pictures'
 
-# del_dir(r'C:\Users\Kevin\Pictures\Saved Pictures')
-# recvery_dir(r'C:\Users\Kevin\Pictures\Saved Pictures')
+recvery_dir(r'C:\Users\Kevin\Pictures\Saved Pictures')
+del_dir(r'C:\Users\Kevin\Pictures\Saved Pictures')
 
-recvery_dir(r'D:\File_Restore-20221006')
-del_dir(r'D:\File_Restore-20221006')
+# recvery_dir(r'D:\File_Restore-20221006')
+# del_dir(r'D:\File_Restore-20221006')
